@@ -1,0 +1,8 @@
+{
+  "name": "resso-admin",
+  "version": "1.0.0",
+  "description": "Admin panel to send in-app notifications",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
