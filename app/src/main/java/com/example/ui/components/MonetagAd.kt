@@ -25,16 +25,19 @@ import com.example.util.AppConstants
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun MonetagAd(
+    zoneId: String,
     modifier: Modifier = Modifier,
     height: Dp = 100.dp
 ) {
-    val html = remember {
-        """
-        <html><head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>html,body{margin:0;padding:0;background:transparent;overflow:hidden;}</style>
-        </head><body>${AppConstants.MONETAG_AD_HTML}</body></html>
-        """.trimIndent()
+    val html = remember(zoneId) {
+        val tag = "<script>(function(s){s.dataset.zone='" + zoneId + "',s.src='" +
+            AppConstants.MONETAG_TAG_SRC +
+            "'})([document.documentElement, document.body].filter(Boolean).pop()" +
+            ".appendChild(document.createElement('script')))</script>"
+        "<html><head>" +
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+            "<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden;}</style>" +
+            "</head><body>" + tag + "</body></html>"
     }
     val webViewRef = remember { arrayOfNulls<WebView>(1) }
 
@@ -66,7 +69,7 @@ fun MonetagAd(
                 settings.domStorageEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = true
                 webViewClient = WebViewClient()
-                loadDataWithBaseURL("https://${AppConstants.MONETAG_DOMAIN}/", html, "text/html", "utf-8", null)
+                loadDataWithBaseURL(AppConstants.MONETAG_BASE_URL, html, "text/html", "utf-8", null)
                 webViewRef[0] = this
             }
         }
