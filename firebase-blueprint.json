@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "SongStats": {
+      "title": "SongStats",
+      "description": "Aggregated community like and comment counters for a song.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Normalized song title."
+        },
+        "artist": {
+          "type": "string",
+          "description": "Normalized primary artist string."
+        },
+        "likeCount": {
+          "type": "integer",
+          "description": "Total community likes incremented atomically via FieldValue.increment()."
+        },
+        "commentCount": {
+          "type": "integer",
+          "description": "Total community comments incremented atomically via FieldValue.increment()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["title", "artist", "likeCount", "commentCount"]
+    },
+    "SongComment": {
+      "title": "SongComment",
+      "description": "User comment on a song.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Comment body (1 to 300 characters)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name from Me tab."
+        },
+        "uid": {
+          "type": "string",
+          "description": "Authenticated author UID."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["text", "name", "uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/songs/{songId}": {
+      "schema": { "$ref": "#/entities/SongStats" },
+      "description": "Song metadata and atomic like/comment counters."
+    },
+    "/songs/{songId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/SongComment" },
+      "description": "Real-time comments subcollection ordered newest first."
+    }
+  }
+}

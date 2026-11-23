@@ -1,0 +1,6 @@
+{
+  "name": "EvaMusic",
+  "description": "A vertical swipe music streaming app with Resso-style player, background Media3 playback, artist discovery, and live song comments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

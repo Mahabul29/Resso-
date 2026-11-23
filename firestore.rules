@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidSong(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.artist is string && data.artist.size() >= 1 && data.artist.size() <= 200 &&
+             data.likeCount is int && data.likeCount >= 0 &&
+             data.commentCount is int && data.commentCount >= 0 &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isLikeAction(inData, exData) {
+      return inData.diff(exData).affectedKeys().hasOnly(['likeCount', 'title', 'artist', 'updatedAt']) &&
+             inData.commentCount == exData.commentCount &&
+             (inData.likeCount == exData.likeCount + 1 || (exData.likeCount > 0 && inData.likeCount == exData.likeCount - 1));
+    }
+
+    function isCommentCountAction(inData, exData) {
+      return inData.diff(exData).affectedKeys().hasOnly(['commentCount', 'title', 'artist', 'updatedAt']) &&
+             inData.likeCount == exData.likeCount &&
+             (inData.commentCount == exData.commentCount + 1 || (exData.commentCount > 0 && inData.commentCount == exData.commentCount - 1));
+    }
+
+    function isValidComment(data) {
+      return data.text is string && data.text.size() >= 1 && data.text.size() <= 300 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /songs/{songId} {
+      allow get: if isSignedIn() && isValidId(songId);
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+                       isValidId(songId) &&
+                       incoming().keys().hasAll(['title', 'artist', 'likeCount', 'commentCount']) &&
+                       incoming().keys().hasOnly(['title', 'artist', 'likeCount', 'commentCount', 'updatedAt']) &&
+                       isValidSong(incoming()) &&
+                       incoming().likeCount <= 1 &&
+                       incoming().commentCount <= 1;
+
+      allow update: if isSignedIn() &&
+                       isValidId(songId) &&
+                       isValidSong(incoming()) &&
+                       (isLikeAction(incoming(), existing()) || isCommentCountAction(incoming(), existing()));
+
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow get: if isSignedIn() && isValidId(songId) && isValidId(commentId);
+        allow list: if isSignedIn() && isValidId(songId);
+
+        allow create: if isSignedIn() &&
+                         isValidId(songId) &&
+                         isValidId(commentId) &&
+                         incoming().keys().hasAll(['text', 'name', 'uid', 'createdAt']) &&
+                         incoming().keys().hasOnly(['text', 'name', 'uid', 'createdAt']) &&
+                         isValidComment(incoming());
+
+        allow update: if false;
+
+        allow delete: if isSignedIn() &&
+                         isValidId(songId) &&
+                         isValidId(commentId) &&
+                         existing().uid == request.auth.uid;
+      }
+    }
+  }
+}
