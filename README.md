@@ -11,19 +11,19 @@ A Resso-style music app for Android, built with Kotlin and Jetpack Compose.
 
 ## Download the APK
 
-The APK is built automatically by GitHub Actions every time code is pushed.
+**[⬇️ Download EvaMusic.apk (latest)](../../releases/latest/download/EvaMusic.apk)**
 
-1. Open this repository on GitHub and tap the **Actions** tab.
-2. Tap the latest run with a green check mark (the top one in the list).
-3. Scroll down to **Artifacts** and tap **EvaMusic-debug-apk**. A `.zip` file downloads (you must be signed in to GitHub).
-4. Open the `.zip` (in your Files app) and extract it. Inside is `app-debug.apk`.
-5. Tap `app-debug.apk` to install it.
+Or open the [Releases page](../../releases/latest) and tap **EvaMusic.apk** under Assets.
+
+The APK is rebuilt automatically by GitHub Actions on every push to `main`, and the link above always points to the newest build.
 
 ### Installing
 
-Android will ask you to allow installs from unknown sources the first time. Tap **Settings**, allow it for your Files app or browser, then go back and tap **Install**.
+1. Tap the link above and download `EvaMusic.apk`.
+2. Open it from your Files app or notifications.
+3. Android will ask you to allow installs from unknown sources the first time. Tap **Settings**, allow it for your browser or Files app, then go back and tap **Install**.
 
-> Artifacts are kept for 30 days. If the link has expired, run the build again (see below).
+> If the link says "not found", the first build has not finished yet. Check the **Actions** tab, wait for the green check mark, and try again.
 
 ## Build it yourself
 
@@ -31,7 +31,7 @@ You don't need a computer. On GitHub:
 
 1. Go to **Actions** → **Build Android APK**.
 2. Tap **Run workflow**, choose `debug`, and confirm.
-3. Wait for the run to finish (usually 5 to 10 minutes), then download the APK as shown above.
+3. Wait for the run to finish (usually 5 to 10 minutes), then download the APK from the link above.
 
 To build on a computer instead, install Android Studio, open this project, and run **Build → Build APK(s)**.
 
