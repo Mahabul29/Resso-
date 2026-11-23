@@ -9,6 +9,18 @@ object AppConstants {
     const val APP_LINK = "https://play.google.com/store/apps/details?id=com.aistudio.evamusic.rkmpzq"
     const val SHARE_MESSAGE = "Listen to unlimited music on Resso \uD83C\uDFA7 $APP_LINK"
 
+    // ---- Monetag ads ----
+    // sw.js (service worker) sirf website/PWA ke liye hota hai, native Android app me kaam nahi karta.
+    // Isliye ads WebView me load hote hain. Monetag dashboard se apna banner/tag code yahan paste kar sakte ho.
+    const val MONETAG_ZONE_ID = "11040933"
+    const val MONETAG_DOMAIN = "3nbf4.com"
+    val MONETAG_AD_HTML = """
+        <script src="https://$MONETAG_DOMAIN/act/files/tag.min.js?z=$MONETAG_ZONE_ID" data-cfasync="false" async></script>
+    """.trimIndent()
+
+    // Up Next list me har itne songs ke baad ek ad
+    const val UP_NEXT_AD_INTERVAL = 8
+
     const val JIOSAAVN_BASE_URL = "https://shnwazdev-jiosaavn-apii.vercel.app/"
 
     val EXPLORE_CATEGORIES = listOf(
