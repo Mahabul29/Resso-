@@ -20,6 +20,10 @@ class TrendingCache(context: Context) {
         }
     }
 
+    fun clear() {
+        prefs.edit().clear().apply()
+    }
+
     fun save(day: String, songs: List<Song>) {
         prefs.edit()
             .putString("day", day)
