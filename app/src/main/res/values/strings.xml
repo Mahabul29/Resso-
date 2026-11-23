@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">EvaMusic</string>
+    <string name="app_name">Resso</string>
     <string name="nav_music">Music</string>
     <string name="nav_explore">Explore</string>
     <string name="nav_me">Me</string>
@@ -38,8 +38,8 @@
     <string name="menu_play_next">Play next</string>
     <string name="menu_add_queue">Add to queue</string>
     <string name="menu_go_artist">Go to artist</string>
-    <string name="menu_share_app">Share EvaMusic</string>
-    <string name="share_chooser_title">Share EvaMusic</string>
+    <string name="menu_share_app">Share Resso</string>
+    <string name="share_chooser_title">Share Resso</string>
     <string name="empty_library">Like songs by tapping the heart or double-tapping cover art.</string>
     <string name="empty_artists">Follow artists or like their tracks to build your roster.</string>
     <string name="empty_history">Songs you listen to will appear here.</string>
