@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.EvaMusicApplication
 import com.example.data.firebase.authStateFlow
+import com.example.data.firebase.firebaseAuthOrNull
 import com.example.data.model.ArtistInfo
 import com.example.data.model.Song
 import com.example.data.model.SongComment
@@ -14,9 +15,7 @@ import com.example.data.model.SongStats
 import com.example.data.repository.MusicRepository
 import com.example.player.PlayerManager
 import com.example.util.AppConstants
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.auth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -48,12 +47,17 @@ class EvaMusicViewModel(
     val playerManager: PlayerManager
 ) : ViewModel() {
 
-    val authUser: StateFlow<FirebaseUser?> = Firebase.auth.authStateFlow()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = Firebase.auth.currentUser
-        )
+    // Null when Firebase is not configured (no google-services.json): the app then runs in
+    // local mode instead of crashing.
+    private val firebaseAuth = firebaseAuthOrNull()
+
+    val authUser: StateFlow<FirebaseUser?> =
+        (firebaseAuth?.authStateFlow() ?: flowOf<FirebaseUser?>(null))
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000L),
+                initialValue = firebaseAuth?.currentUser
+            )
 
     private val _feedState = MutableStateFlow<UiState<List<Song>>>(UiState.Loading)
     val feedState: StateFlow<UiState<List<Song>>> = _feedState.asStateFlow()
