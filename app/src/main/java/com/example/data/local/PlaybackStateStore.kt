@@ -50,6 +50,16 @@ class PlaybackStateStore(context: Context) {
         prefs.edit().putString(KEY_SONG_ID, songs[idx].id).apply()
     }
 
+    /** Forgets the saved queue (used by "Delete account"). */
+    @Synchronized
+    fun clear() {
+        try {
+            queueFile.delete()
+        } catch (_: Exception) {
+        }
+        prefs.edit().clear().apply()
+    }
+
     fun savePosition(songId: String, positionMs: Long) {
         prefs.edit()
             .putString(KEY_SONG_ID, songId)
