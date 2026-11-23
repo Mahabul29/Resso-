@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "EvaMusic"
+rootProject.name = "Resso"
 
 include(":app")
