@@ -13,6 +13,18 @@ sealed interface EvaRoute {
     data object MeTab : EvaRoute
 
     @Serializable
+    data object Settings : EvaRoute
+
+    @Serializable
+    data object MusicLanguage : EvaRoute
+
+    @Serializable
+    data object AddArtist : EvaRoute
+
+    @Serializable
+    data object Equalizer : EvaRoute
+
+    @Serializable
     data class Artist(
         val artistName: String,
         val imageUrl: String = ""
