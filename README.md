@@ -1,4 +1,4 @@
-# EvaMusic
+# Resso
 
 A Resso-style music app for Android, built with Kotlin and Jetpack Compose.
 
@@ -11,15 +11,15 @@ A Resso-style music app for Android, built with Kotlin and Jetpack Compose.
 
 ## Download the APK
 
-**[⬇️ Download EvaMusic.apk (latest)](../../releases/latest/download/EvaMusic.apk)**
+**[⬇️ Download Resso.apk (latest)](../../releases/latest/download/Resso.apk)**
 
-Or open the [Releases page](../../releases/latest) and tap **EvaMusic.apk** under Assets.
+Or open the [Releases page](../../releases/latest) and tap **Resso.apk** under Assets.
 
 The APK is rebuilt automatically by GitHub Actions on every push to `main`, and the link above always points to the newest build.
 
 ### Installing
 
-1. Tap the link above and download `EvaMusic.apk`.
+1. Tap the link above and download `Resso.apk`.
 2. Open it from your Files app or notifications.
 3. Android will ask you to allow installs from unknown sources the first time. Tap **Settings**, allow it for your browser or Files app, then go back and tap **Install**.
 
