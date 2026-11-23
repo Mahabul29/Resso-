@@ -27,6 +27,12 @@ interface JioSaavnApi {
         @Query("page") page: Int = 1
     ): Response<ResponseBody>
 
+    @GET("api/search/artists")
+    suspend fun searchArtists(
+        @Query("query") query: String,
+        @Query("limit") limit: Int = 20
+    ): Response<ResponseBody>
+
     /** Songs related to the given song (same endpoint family as saavn.dev). */
     @GET("api/songs/{id}/suggestions")
     suspend fun getSongSuggestions(
