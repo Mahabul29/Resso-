@@ -10,13 +10,20 @@ object AppConstants {
     const val SHARE_MESSAGE = "Listen to unlimited music on Resso \uD83C\uDFA7 $APP_LINK"
 
     // ---- Monetag ads ----
-    // sw.js (service worker) sirf website/PWA ke liye hota hai, native Android app me kaam nahi karta.
-    // Isliye ads WebView me load hote hain. Monetag dashboard se apna banner/tag code yahan paste kar sakte ho.
-    const val MONETAG_ZONE_ID = "11040933"
-    const val MONETAG_DOMAIN = "3nbf4.com"
-    val MONETAG_AD_HTML = """
-        <script src="https://$MONETAG_DOMAIN/act/files/tag.min.js?z=$MONETAG_ZONE_ID" data-cfasync="false" async></script>
-    """.trimIndent()
+    // Ads WebView me load hote hain (native Android app me service worker sw.js kaam nahi karta).
+    const val MONETAG_TAG_SRC = "https://nap5k.com/tag.min.js"
+    const val MONETAG_BASE_URL = "https://nap5k.com/"
+
+    // Har jagah ka apna zone
+    const val ZONE_MUSIC_PHOTO = "12335692"      // Music page, photo ke beech me
+    const val ZONE_EXPLORE_RECENT = "12335693"   // Explore, recent searches ke niche
+    const val ZONE_PROFILE = "12335694"          // Profile ke niche
+
+    // Up Next ads: har 8 songs ke baad agla zone (cycle hota rehta hai)
+    val ZONES_UP_NEXT = listOf(
+        "12335695", "12335696", "12335697",
+        "12335702", "12335703", "12335704"
+    )
 
     // Up Next list me har itne songs ke baad ek ad
     const val UP_NEXT_AD_INTERVAL = 8
