@@ -7,12 +7,11 @@ import com.example.R
 object AppConstants {
     // Update this single constant with your Play Store or website link
     const val APP_LINK = "https://play.google.com/store/apps/details?id=com.aistudio.evamusic.rkmpzq"
-    const val SHARE_MESSAGE = "Listen to unlimited music on EvaMusic \uD83C\uDFA7 $APP_LINK"
+    const val SHARE_MESSAGE = "Listen to unlimited music on Resso \uD83C\uDFA7 $APP_LINK"
 
     const val JIOSAAVN_BASE_URL = "https://shnwazdev-jiosaavn-apii.vercel.app/"
 
     val EXPLORE_CATEGORIES = listOf(
-        "Arijit Singh",
         "Romantic",
         "Punjabi",
         "Lo-fi",
@@ -22,6 +21,23 @@ object AppConstants {
         "Devotional",
         "Retro",
         "Workout"
+    )
+
+    // One of these (picked by the day of the year) is mixed into "Trending Now" so the list
+    // changes every single day, even if the trending endpoint returns the same songs.
+    val DAILY_TRENDING_QUERIES = listOf(
+        "Top Hindi songs",
+        "Bollywood new releases",
+        "Punjabi latest hits",
+        "Hindi viral songs",
+        "Romantic Hindi hits",
+        "Bollywood party songs",
+        "Hindi chill songs",
+        "Latest English pop",
+        "South Indian hits",
+        "Hindi sad songs",
+        "Bollywood dance hits",
+        "Indie Hindi songs"
     )
 
     val ROTATING_DISCOVERY_QUERIES = listOf(
