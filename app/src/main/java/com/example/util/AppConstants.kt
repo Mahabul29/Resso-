@@ -28,6 +28,36 @@ object AppConstants {
     // Up Next list me har itne songs ke baad ek ad
     const val UP_NEXT_AD_INTERVAL = 8
 
+    const val TELEGRAM_URL = "https://t.me/+8pRE58uYZZIzYjJl"
+
+    /** Music languages offered in Settings: key is used for searching, native is only a label. */
+    data class MusicLanguage(val key: String, val native: String)
+
+    val MUSIC_LANGUAGES = listOf(
+        MusicLanguage("Hindi", "हिन्दी"),
+        MusicLanguage("English", "English"),
+        MusicLanguage("Bengali", "বাংলা"),
+        MusicLanguage("Assamese", "অসমীয়া"),
+        MusicLanguage("Punjabi", "ਪੰਜਾਬੀ"),
+        MusicLanguage("Bhojpuri", "भोजपुरी"),
+        MusicLanguage("Haryanvi", "हरियाणवी"),
+        MusicLanguage("Marathi", "मराठी"),
+        MusicLanguage("Gujarati", "ગુજરાતી"),
+        MusicLanguage("Tamil", "தமிழ்"),
+        MusicLanguage("Telugu", "తెలుగు"),
+        MusicLanguage("Kannada", "ಕನ್ನಡ"),
+        MusicLanguage("Malayalam", "മലയാളം"),
+        MusicLanguage("Odia", "ଓଡ଼ିଆ"),
+        MusicLanguage("Urdu", "اردو")
+    )
+
+    /** Search queries built from the languages the listener picked. */
+    fun languageTrendingQueries(languages: Set<String>): List<String> =
+        languages.sorted().flatMap { lang -> listOf("Top $lang songs", "Latest $lang hits") }
+
+    fun languageDiscoveryQueries(languages: Set<String>): List<String> =
+        languages.sorted().flatMap { lang -> listOf("$lang romantic songs", "$lang hits", "$lang party songs") }
+
     const val JIOSAAVN_BASE_URL = "https://shnwazdev-jiosaavn-apii.vercel.app/"
 
     val EXPLORE_CATEGORIES = listOf(
@@ -80,6 +110,17 @@ fun shareApp(context: Context) {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     context.startActivity(chooser)
+}
+
+fun openTelegram(context: Context) {
+    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(AppConstants.TELEGRAM_URL)).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (_: Exception) {
+        // No app can open the link: nothing else to do.
+    }
 }
 
 fun decodeHtmlEntities(input: String?): String {
@@ -135,4 +176,22 @@ fun formatRemainingMs(positionMs: Long, durationMs: Long): String {
     if (durationMs <= 0L) return "-0:00"
     val remaining = (durationMs - positionMs).coerceAtLeast(0L)
     return "-${formatDurationMs(remaining)}"
+}
+
+/** Opens this app's notification settings in Android Settings. */
+fun openNotificationSettings(context: Context) {
+    val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+    } else {
+        Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.parse("package:${context.packageName}")
+        }
+    }
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (_: Exception) {
+    }
 }
