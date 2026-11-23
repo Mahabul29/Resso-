@@ -203,7 +203,7 @@ class MusicRepository(
                 }
                 if (direct.isNotEmpty()) return@withContext Result.success(direct.take(limit))
 
-                val songs = searchSongs(trimmed, 30).getOrElse { return@withContext Result.failure(it) }
+                val songs = searchSongs(trimmed, 30).getOrElse { return@withContext Result.failure<List<ArtistInfo>>(it) }
                 val fromSongs = LinkedHashMap<String, ArtistInfo>()
                 songs.forEach { song ->
                     val name = song.firstArtist
