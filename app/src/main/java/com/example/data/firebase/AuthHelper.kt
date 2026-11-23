@@ -9,7 +9,6 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.example.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -32,6 +31,16 @@ fun FirebaseAuth.authStateFlow(): Flow<FirebaseUser?> = callbackFlow {
     }
     addAuthStateListener(listener)
     awaitClose { removeAuthStateListener(listener) }
+}
+
+/**
+ * Looks up default_web_client_id at runtime. The google-services plugin only generates this
+ * resource when google-services.json is present, so a direct R.string reference would fail to
+ * compile without Firebase. Returns null when it's missing.
+ */
+private fun Context.webClientIdOrNull(): String? {
+    val id = resources.getIdentifier("default_web_client_id", "string", packageName)
+    return if (id != 0) getString(id).takeIf { it.isNotBlank() } else null
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
@@ -57,9 +66,8 @@ fun attemptAutoSignIn(
         onAuthSuccess()
         return
     }
-    val clientId = try {
-        context.getString(R.string.default_web_client_id)
-    } catch (_: Exception) {
+    val clientId = context.webClientIdOrNull()
+    if (clientId == null) {
         onUnauthenticated()
         return
     }
@@ -101,9 +109,8 @@ fun onGoogleSignInClicked(
         onAuthError("Firebase is not set up yet. Add google-services.json to enable sign-in.")
         return
     }
-    val clientId = try {
-        context.getString(R.string.default_web_client_id)
-    } catch (_: Exception) {
+    val clientId = context.webClientIdOrNull()
+    if (clientId == null) {
         onAuthError("Google Sign-In configuration missing: default_web_client_id not found")
         return
     }
