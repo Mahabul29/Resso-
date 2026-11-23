@@ -19,6 +19,7 @@
     <string name="likes_label">Likes</string>
     <string name="following_label">Following</string>
     <string name="played_label">Played</string>
+    <string name="tab_liked_songs">Liked Songs</string>
     <string name="tab_library">Library</string>
     <string name="tab_artist">Artist</string>
     <string name="tab_history">History</string>
