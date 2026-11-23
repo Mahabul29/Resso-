@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resso Admin Panel</title>
+<style>
+  :root{--bg:#0e0c13;--card:#1a1722;--card2:#231f2e;--line:#2f2a3d;--text:#f3f1f8;--muted:#9b95ad;--pink:#ff2d5f;--orange:#ff7a45;--ok:#3ddc97;--err:#ff5d6c}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .wrap{max-width:720px;margin:0 auto;padding:18px 16px 60px}
+  h1{font-size:22px;margin:6px 0 2px}
+  h1 span{background:linear-gradient(90deg,var(--orange),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+  input,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;outline:none}
+  input:focus,textarea:focus{border-color:var(--pink)}
+  textarea{min-height:90px;resize:vertical}
+  .count{float:right;font-size:11px;color:var(--muted)}
+  button{border:0;border-radius:12px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;color:#fff;background:linear-gradient(90deg,var(--orange),var(--pink))}
+  button:disabled{opacity:.5}
+  button.ghost{background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+  button.small{padding:7px 12px;font-size:13px}
+  .row{display:flex;gap:10px;align-items:center}
+  .row.between{justify-content:space-between}
+  .msg{font-size:13px;margin-top:10px;min-height:18px}
+  .msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
+  .preview{background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden;max-width:340px;margin:8px auto 0}
+  .preview img{width:100%;max-height:180px;object-fit:cover;display:block}
+  .preview .pb{padding:12px 14px}
+  .preview .pt{font-weight:700;font-size:16px;margin-bottom:4px;word-break:break-word}
+  .preview .pm{font-size:14px;color:#cfcade;white-space:pre-wrap;word-break:break-word}
+  .item{border-top:1px solid var(--line);padding:12px 0;display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+  .item:first-child{border-top:0}
+  .item .t{font-weight:600;word-break:break-word}
+  .item .m{color:var(--muted);font-size:13px;margin-top:2px;word-break:break-word}
+  .item .d{color:var(--muted);font-size:11px;margin-top:4px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;background:var(--pink);color:#fff;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span>Resso</span> Admin Panel</h1>
+  <div class="sub">App me notification bhejo</div>
+
+  <!-- Login -->
+  <div id="loginView" class="card">
+    <label for="pass" style="margin-top:0">Admin password</label>
+    <input id="pass" type="password" placeholder="Password daalo" autocomplete="current-password">
+    <div class="row" style="margin-top:14px"><button id="loginBtn">Login</button></div>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+
+  <!-- Panel -->
+  <div id="panelView" class="hidden">
+    <div class="card">
+      <div class="row between">
+        <strong>New notification</strong>
+        <button class="ghost small" id="logoutBtn">Logout</button>
+      </div>
+
+      <label for="title">Title <span class="count" id="tc">0/100</span></label>
+      <input id="title" maxlength="100" placeholder="Jaise: New songs added 🎧">
+
+      <label for="message">Message <span class="count" id="mc">0/500</span></label>
+      <textarea id="message" maxlength="500" placeholder="Notification ka message likho"></textarea>
+
+      <label for="imageUrl">Image URL (optional)</label>
+      <input id="imageUrl" type="url" placeholder="https://...jpg">
+
+      <label for="linkUrl">Link URL (optional)</label>
+      <input id="linkUrl" type="url" placeholder="https://...">
+
+      <div class="preview" id="preview">
+        <img id="pvImg" class="hidden" alt="">
+        <div class="pb"><div class="pt" id="pvTitle">Title yahan dikhega</div><div class="pm" id="pvMsg">Message yahan dikhega</div></div>
+      </div>
+
+      <div class="row" style="margin-top:16px"><button id="sendBtn">Send notification</button></div>
+      <div id="sendMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="row between"><strong>History</strong><button class="ghost small" id="refreshBtn">Refresh</button></div>
+      <div id="list" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var KEY = "resso_admin_key";
+
+  function getKey(){ try { return sessionStorage.getItem(KEY) || ""; } catch(e){ return ""; } }
+  function setKey(v){ try { v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY); } catch(e){} }
+
+  function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({ "x-admin-key": getKey(), "Content-Type": "application/json" }, opts.headers || {});
+    return fetch(path, opts).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){
+        if(!r.ok){ var e = new Error(j.error || ("Error " + r.status)); e.status = r.status; throw e; }
+        return j;
+      });
+    });
+  }
+
+  function show(loggedIn){
+    $("loginView").classList.toggle("hidden", loggedIn);
+    $("panelView").classList.toggle("hidden", !loggedIn);
+  }
+
+  function setMsg(el, text, ok){ el.textContent = text || ""; el.className = "msg " + (text ? (ok ? "ok" : "err") : ""); }
+
+  function login(){
+    var p = $("pass").value;
+    if(!p){ setMsg($("loginMsg"), "Password daalo"); return; }
+    setKey(p);
+    $("loginBtn").disabled = true;
+    api("/api/admin/list").then(function(j){
+      setMsg($("loginMsg"), "");
+      show(true);
+      renderList(j.notifications || []);
+    }).catch(function(e){
+      setKey("");
+      setMsg($("loginMsg"), e.message);
+    }).then(function(){ $("loginBtn").disabled = false; });
+  }
+
+  function fmt(ts){ return new Date(ts).toLocaleString(); }
+
+  function renderList(items){
+    var box = $("list");
+    box.textContent = "";
+    if(!items.length){
+      var empty = document.createElement("div");
+      empty.className = "m"; empty.style.color = "var(--muted)"; empty.textContent = "Abhi koi notification nahi bheji.";
+      box.appendChild(empty); return;
+    }
+    items.forEach(function(n, i){
+      var row = document.createElement("div"); row.className = "item";
+      var left = document.createElement("div");
+      var t = document.createElement("div"); t.className = "t"; t.textContent = n.title;
+      if(i === 0){ var b = document.createElement("span"); b.className = "badge"; b.textContent = "LIVE"; t.appendChild(b); }
+      var m = document.createElement("div"); m.className = "m"; m.textContent = n.message;
+      var d = document.createElement("div"); d.className = "d"; d.textContent = fmt(n.createdAt);
+      left.appendChild(t); left.appendChild(m); left.appendChild(d);
+      var del = document.createElement("button"); del.className = "ghost small"; del.textContent = "Delete";
+      del.onclick = function(){
+        if(!confirm("Ye notification delete karein?")) return;
+        api("/api/admin/delete/" + encodeURIComponent(n.id), { method: "DELETE" }).then(load).catch(function(e){ alert(e.message); });
+      };
+      row.appendChild(left); row.appendChild(del); box.appendChild(row);
+    });
+  }
+
+  function load(){
+    return api("/api/admin/list").then(function(j){ renderList(j.notifications || []); }).catch(function(e){
+      if(e.status === 401){ setKey(""); show(false); }
+      alert(e.message);
+    });
+  }
+
+  function updatePreview(){
+    $("tc").textContent = $("title").value.length + "/100";
+    $("mc").textContent = $("message").value.length + "/500";
+    $("pvTitle").textContent = $("title").value || "Title yahan dikhega";
+    $("pvMsg").textContent = $("message").value || "Message yahan dikhega";
+    var u = $("imageUrl").value.trim();
+    var img = $("pvImg");
+    if(/^https?:\/\//i.test(u)){ img.src = u; img.classList.remove("hidden"); } else { img.removeAttribute("src"); img.classList.add("hidden"); }
+  }
+
+  function send(){
+    var body = {
+      title: $("title").value.trim(),
+      message: $("message").value.trim(),
+      imageUrl: $("imageUrl").value.trim(),
+      linkUrl: $("linkUrl").value.trim()
+    };
+    if(!body.title || !body.message){ setMsg($("sendMsg"), "Title aur message dono zaroori hain"); return; }
+    $("sendBtn").disabled = true;
+    api("/api/admin/send", { method: "POST", body: JSON.stringify(body) }).then(function(){
+      setMsg($("sendMsg"), "Notification bhej di gayi ✅", true);
+      $("title").value = ""; $("message").value = ""; $("imageUrl").value = ""; $("linkUrl").value = "";
+      updatePreview();
+      return load();
+    }).catch(function(e){ setMsg($("sendMsg"), e.message); }).then(function(){ $("sendBtn").disabled = false; });
+  }
+
+  $("loginBtn").onclick = login;
+  $("pass").addEventListener("keydown", function(e){ if(e.key === "Enter") login(); });
+  $("logoutBtn").onclick = function(){ setKey(""); show(false); $("pass").value = ""; };
+  $("sendBtn").onclick = send;
+  $("refreshBtn").onclick = load;
+  ["title","message","imageUrl"].forEach(function(id){ $(id).addEventListener("input", updatePreview); });
+  updatePreview();
+
+  if(getKey()){
+    api("/api/admin/list").then(function(j){ show(true); renderList(j.notifications || []); }).catch(function(){ setKey(""); show(false); });
+  }
+})();
+</script>
+</body>
+</html>
