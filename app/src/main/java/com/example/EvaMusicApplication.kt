@@ -1,21 +1,25 @@
 package com.example
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
+import android.app.Application
+import com.example.data.firebase.FirestoreMusicRepository
+import com.example.data.repository.MusicRepository
+import com.example.player.PlayerManager
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
-class ExampleRobolectricTest {
+class EvaMusicApplication : Application() {
 
-  @Test
-  fun `read string from context`() {
-    val context = ApplicationProvider.getApplicationContext<Context>()
-    val appName = context.getString(R.string.app_name)
-    assertEquals("Resso", appName)
-  }
+    lateinit var playerManager: PlayerManager
+        private set
+
+    lateinit var musicRepository: MusicRepository
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        playerManager = PlayerManager(this)
+        playerManager.connect()
+        musicRepository = MusicRepository(
+            context = this,
+            firestoreRepo = FirestoreMusicRepository(this)
+        )
+    }
 }
