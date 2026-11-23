@@ -65,6 +65,7 @@ fun ArtistScreen(
     onLoadArtistSongs: (String) -> Unit,
     onToggleFollow: (String, String) -> Unit,
     onPlaySongs: (songs: List<Song>, startIndex: Int, contextTitle: String) -> Unit,
+    onPlaySong: (Song) -> Unit,
     onShuffleSongs: (songs: List<Song>, contextTitle: String) -> Unit,
     onOpenMenu: (Song) -> Unit,
     onBack: () -> Unit,
@@ -227,7 +228,7 @@ fun ArtistScreen(
                             SongListRow(
                                 song = song,
                                 isCurrentlyPlaying = song.id == currentSongId,
-                                onClick = { onPlaySongs(songs, idx, "$artistName Mix") },
+                                onClick = { onPlaySong(song) },
                                 onMenuClick = { onOpenMenu(song) }
                             )
                         }
