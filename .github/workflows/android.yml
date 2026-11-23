@@ -99,7 +99,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: EvaMusic-${{ github.event.inputs.build_type || 'debug' }}-apk
+          name: Resso-${{ github.event.inputs.build_type || 'debug' }}-apk
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 1
@@ -112,10 +112,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          cp "$APK" EvaMusic.apk
+          cp "$APK" Resso.apk
           gh release delete latest --cleanup-tag --yes || true
-          gh release create latest EvaMusic.apk \
-            --title "EvaMusic (latest build)" \
-            --notes "Auto-built from commit ${GITHUB_SHA::7}. Download EvaMusic.apk below." \
+          gh release create latest Resso.apk \
+            --title "Resso (latest build)" \
+            --notes "Auto-built from commit ${GITHUB_SHA::7}. Download Resso.apk below." \
             --target "$GITHUB_SHA"
+
             
