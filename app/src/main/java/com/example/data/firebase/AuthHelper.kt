@@ -14,6 +14,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.CoroutineScope
@@ -165,5 +166,50 @@ fun signOutUser(
                 onSignOutComplete()
             }
         }
+    }
+}
+
+/**
+ * Deletes the signed-in Firebase user. Firebase only allows this shortly after a sign-in, so when
+ * it answers "recent login required" the user is asked to confirm with Google once more and the
+ * delete is retried. Succeeds right away when nobody is signed in.
+ */
+suspend fun deleteFirebaseAccount(
+    context: Context,
+    credentialManager: CredentialManager
+): Result<Unit> {
+    val firebaseAuth = firebaseAuthOrNull()
+    val user = firebaseAuth?.currentUser ?: return Result.success(Unit)
+    return try {
+        try {
+            user.delete().await()
+        } catch (_: FirebaseAuthRecentLoginRequiredException) {
+            val clientId = context.webClientIdOrNull()
+                ?: return Result.failure(IllegalStateException("Google Sign-In configuration missing"))
+            val activity = context.findActivity()
+                ?: return Result.failure(IllegalStateException("Unable to ask for sign-in without an Activity"))
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(GetSignInWithGoogleOption.Builder(serverClientId = clientId).build())
+                .build()
+            val cred = credentialManager.getCredential(activity, request).credential
+            if (cred is CustomCredential && cred.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                val token = GoogleIdTokenCredential.createFrom(cred.data).idToken
+                user.reauthenticate(GoogleAuthProvider.getCredential(token, null)).await()
+                user.delete().await()
+            } else {
+                return Result.failure(IllegalStateException("Unexpected credential type"))
+            }
+        }
+        try {
+            credentialManager.clearCredentialState(ClearCredentialStateRequest())
+        } catch (e: Exception) {
+            Log.w("Auth", "Failed to clear credential state: ${e.message}")
+        }
+        Result.success(Unit)
+    } catch (e: GetCredentialCancellationException) {
+        Result.failure(e)
+    } catch (e: Exception) {
+        Log.e("Auth", "Delete account failed", e)
+        Result.failure(e)
     }
 }
