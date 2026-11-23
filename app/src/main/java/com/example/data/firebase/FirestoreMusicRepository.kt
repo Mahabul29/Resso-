@@ -23,30 +23,39 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 class FirestoreMusicRepository(
-    private val db: FirebaseFirestore,
-    private val auth: FirebaseAuth = Firebase.auth
+    private val dbOrNull: FirebaseFirestore?,
+    private val auth: FirebaseAuth? = firebaseAuthOrNull()
 ) {
+    // Firebase can be missing (no google-services.json). In that case dbOrNull and auth are
+    // null and the app falls back to local storage instead of crashing.
     constructor(context: Context) : this(
-        FirebaseFirestore.getInstance(
-            context.applicationContext.getString(R.string.firestore_database_id)
-        )
+        try {
+            FirebaseFirestore.getInstance(
+                context.applicationContext.getString(R.string.firestore_database_id)
+            )
+        } catch (_: Exception) {
+            null
+        }
     )
 
+    private val db: FirebaseFirestore
+        get() = dbOrNull ?: throw IllegalStateException("Firebase is not configured.")
+
     private fun requireUserId(): String {
-        val uid = auth.currentUser?.uid
+        val uid = auth?.currentUser?.uid
         if (uid.isNullOrBlank()) {
             throw IllegalStateException("User must be signed in with Google before accessing Firestore.")
         }
         return uid
     }
 
-    fun isAuthenticated(): Boolean = !auth.currentUser?.uid.isNullOrBlank()
+    fun isAuthenticated(): Boolean = dbOrNull != null && !auth?.currentUser?.uid.isNullOrBlank()
 
-    fun currentUserId(): String? = auth.currentUser?.uid
+    fun currentUserId(): String? = auth?.currentUser?.uid
 
     fun observeSongStats(song: Song): Flow<SongStats?> = flow {
-        val uid = auth.currentUser?.uid
-        if (uid.isNullOrBlank()) {
+        val uid = auth?.currentUser?.uid
+        if (uid.isNullOrBlank() || dbOrNull == null) {
             emit(null)
             return@flow
         }
@@ -69,7 +78,7 @@ class FirestoreMusicRepository(
                     .filterIsInstance<FirebaseFirestoreException>()
                     .firstOrNull()
                 if (firestoreError == null && error is CancellationException) throw error
-                if (auth.currentUser?.uid == uid) {
+                if (auth?.currentUser?.uid == uid) {
                     handleFirestoreError(firestoreError ?: error, OperationType.GET, path)
                 }
                 emit(null)
@@ -78,8 +87,8 @@ class FirestoreMusicRepository(
     }
 
     fun observeComments(song: Song): Flow<List<SongComment>> = flow {
-        val uid = auth.currentUser?.uid
-        if (uid.isNullOrBlank()) {
+        val uid = auth?.currentUser?.uid
+        if (uid.isNullOrBlank() || dbOrNull == null) {
             emit(emptyList())
             return@flow
         }
@@ -101,7 +110,7 @@ class FirestoreMusicRepository(
                     .filterIsInstance<FirebaseFirestoreException>()
                     .firstOrNull()
                 if (firestoreError == null && error is CancellationException) throw error
-                if (auth.currentUser?.uid == uid) {
+                if (auth?.currentUser?.uid == uid) {
                     handleFirestoreError(firestoreError ?: error, OperationType.LIST, path)
                 }
                 throw (firestoreError ?: error)
