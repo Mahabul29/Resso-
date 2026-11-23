@@ -1,5 +1,6 @@
 package com.example.data.remote
 
+import com.example.data.model.ArtistInfo
 import com.example.data.model.Song
 import com.example.util.decodeHtmlEntities
 import com.squareup.moshi.Moshi
@@ -36,6 +37,41 @@ object JioSaavnParser {
             }
         }
         return songs
+    }
+
+    /** Reads an artist search response ({data:{results:[{name, image}]}}) into [ArtistInfo]s. */
+    fun parseArtists(rawJson: String): List<ArtistInfo> {
+        val trimmed = rawJson.trim()
+        if (trimmed.isEmpty()) return emptyList()
+        val parsed = try {
+            moshiAdapter.fromJson(trimmed)
+        } catch (_: Exception) {
+            return emptyList()
+        } ?: return emptyList()
+
+        val items: List<*> = when (parsed) {
+            is List<*> -> parsed
+            is Map<*, *> -> {
+                val dataVal = parsed["data"]
+                when {
+                    dataVal is Map<*, *> && dataVal["results"] is List<*> -> dataVal["results"] as List<*>
+                    dataVal is List<*> -> dataVal
+                    parsed["results"] is List<*> -> parsed["results"] as List<*>
+                    else -> emptyList<Any>()
+                }
+            }
+            else -> emptyList<Any>()
+        }
+
+        val seen = HashSet<String>()
+        val artists = mutableListOf<ArtistInfo>()
+        for (item in items) {
+            val map = item as? Map<*, *> ?: continue
+            val name = decodeHtmlEntities(map["name"].asCleanString().ifBlank { map["title"].asCleanString() })
+            if (name.isBlank() || !seen.add(name.lowercase())) continue
+            artists.add(ArtistInfo(name = name, imageUrl = extractBestImage(map["image"])))
+        }
+        return artists
     }
 
     private fun extractSongList(root: Map<*, *>): List<*> {
