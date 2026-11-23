@@ -14,6 +14,9 @@ on:
           - debug
           - release
 
+permissions:
+  contents: write
+
 concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
@@ -91,11 +94,28 @@ jobs:
           export KEYSTORE_PATH="$RUNNER_TEMP/my-upload-key.jks"
           gradle assembleRelease --stacktrace
 
-      - name: Upload APK
+      # Artifact upload is optional (GitHub artifact storage can fill up), so never fail the run.
+      - name: Upload APK (artifact)
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: EvaMusic-${{ github.event.inputs.build_type || 'debug' }}-apk
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
-          retention-days: 30
-          
+          retention-days: 1
+
+      # Publishes the APK to a permanent "latest" release. Releases don't use artifact
+      # storage and give a fixed download link for the README.
+      - name: Publish APK to Releases
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          cp "$APK" EvaMusic.apk
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest EvaMusic.apk \
+            --title "EvaMusic (latest build)" \
+            --notes "Auto-built from commit ${GITHUB_SHA::7}. Download EvaMusic.apk below." \
+            --target "$GITHUB_SHA"
+            
