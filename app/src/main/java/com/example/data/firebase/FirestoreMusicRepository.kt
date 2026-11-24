@@ -30,9 +30,12 @@ class FirestoreMusicRepository(
     // null and the app falls back to local storage instead of crashing.
     constructor(context: Context) : this(
         try {
-            FirebaseFirestore.getInstance(
-                context.applicationContext.getString(R.string.firestore_database_id)
-            )
+            val dbId = context.applicationContext.getString(R.string.firestore_database_id)
+            if (dbId.isBlank() || dbId == "(default)") {
+                FirebaseFirestore.getInstance()
+            } else {
+                FirebaseFirestore.getInstance(dbId)
+            }
         } catch (_: Exception) {
             null
         }
