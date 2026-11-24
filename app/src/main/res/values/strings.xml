@@ -108,4 +108,12 @@
     <string name="about_title">About Resso</string>
     <string name="about_body">Resso is a music app for people who love listening. Discover and stream songs, follow your favourite artists, like tracks and keep your own library with you in one simple player.\n\nWe keep improving Resso with your feedback. Join our Telegram community to share ideas and report problems.</string>
     <string name="about_version">Version %1$s</string>
+
+    <!-- Lyrics -->
+    <string name="menu_lyrics">Lyrics</string>
+    <string name="lyrics_title">Lyrics</string>
+    <string name="lyrics_not_available">Lyrics aren\'t available for this song.</string>
+    <string name="lyrics_load_failed">Couldn\'t load lyrics. Check your connection.</string>
+    <string name="lyrics_synced_label">Synced lyrics</string>
+    <string name="music_language_all_short">All</string>
 </resources>
