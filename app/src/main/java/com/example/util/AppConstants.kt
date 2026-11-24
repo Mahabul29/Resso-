@@ -32,7 +32,12 @@ object AppConstants {
     // Me > Liked Songs: ek ad har itne songs ke baad
     const val LIKED_SONGS_AD_INTERVAL = 7
 
-    const val TELEGRAM_URL = "https://t.me/+8pRE58uYZZIzYjJl"
+    // ---- Admin notifications ----
+    // Apne deployed server (server.js, Koyeb/Render) ka base URL yaha daalo, bina end ke "/" ke.
+    // Example: "https://your-app.koyeb.app" . Khali rahega to notification nahi aayegi.
+    const val NOTIFICATION_API_URL = ""
+
+    const val TELEGRAM_URL ="https://t.me/+8pRE58uYZZIzYjJl"
 
     /** Music languages offered in Settings: key is used for searching, native is only a label. */
     data class MusicLanguage(val key: String, val native: String)
