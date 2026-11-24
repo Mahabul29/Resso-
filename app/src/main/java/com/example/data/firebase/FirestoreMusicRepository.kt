@@ -2,9 +2,12 @@ package com.example.data.firebase
 
 import android.content.Context
 import com.example.R
+import com.example.data.model.ArtistInfo
 import com.example.data.model.Song
 import com.example.data.model.SongComment
 import com.example.data.model.SongStats
+import com.example.data.model.UserProfile
+import com.example.data.model.ViewedProfile
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
@@ -341,10 +344,15 @@ class FirestoreMusicRepository(
 
     suspend fun saveProfile(displayName: String, username: String): Result<Unit> = try {
         val uid = requireUserId()
+        val cleanName = displayName.trim().take(40)
+        val cleanUser = username.trim().removePrefix("@").lowercase().take(20)
+        // usernameLower / displayNameLower are what other people's searches look at.
         db.collection("users").document(uid).set(
             mapOf(
-                "displayName" to displayName.trim().take(40),
-                "username" to username.trim().take(20),
+                "displayName" to cleanName,
+                "displayNameLower" to cleanName.lowercase(),
+                "username" to cleanUser,
+                "usernameLower" to cleanUser,
                 "updatedAt" to System.currentTimeMillis()
             )
         ).await()
@@ -369,6 +377,105 @@ class FirestoreMusicRepository(
         throw e
     } catch (e: Exception) {
         android.util.Log.w("ProfileSync", "fetch failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    // ---- Search other people & view their public profile ----
+
+    private fun docToProfile(d: DocumentSnapshot): UserProfile? {
+        val username = d.getString("username").orEmpty()
+        val name = d.getString("displayName").orEmpty()
+        if (username.isBlank() && name.isBlank()) return null
+        return UserProfile(uid = d.id, displayName = name, username = username)
+    }
+
+    /** Finds people whose @username (or display name) starts with [query]. Never returns the current user. */
+    suspend fun searchUsers(query: String, limit: Long = 10): Result<List<UserProfile>> = try {
+        val me = requireUserId()
+        val q = query.trim().removePrefix("@").lowercase()
+        if (q.length < 2) {
+            Result.success(emptyList())
+        } else {
+            val byUsername = db.collection("users")
+                .orderBy("usernameLower")
+                .startAt(q).endAt(q + "\uf8ff")
+                .limit(limit).get().await()
+            val byName = try {
+                db.collection("users")
+                    .orderBy("displayNameLower")
+                    .startAt(q).endAt(q + "\uf8ff")
+                    .limit(limit).get().await().documents
+            } catch (_: Exception) {
+                emptyList()
+            }
+            val merged = LinkedHashMap<String, UserProfile>()
+            (byUsername.documents + byName).forEach { d ->
+                if (d.id != me) docToProfile(d)?.let { merged.putIfAbsent(d.id, it) }
+            }
+            Result.success(merged.values.toList())
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("UserSearch", "search failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    /** Loads another user's profile with their liked songs and the artists behind them. */
+    suspend fun fetchUserProfile(uid: String): Result<ViewedProfile> = try {
+        requireUserId()
+        require(uid.isNotBlank()) { "Invalid user." }
+        val userRef = db.collection("users").document(uid)
+        val doc = userRef.get().await()
+        val profile = (if (doc.exists()) docToProfile(doc) else null)
+            ?: throw IllegalStateException("This profile no longer exists.")
+
+        val likedDocs = userRef.collection("likedSongs")
+            .orderBy("likedAt", Query.Direction.DESCENDING)
+            .limit(100).get().await().documents
+        val liked = likedDocs.mapNotNull { d ->
+            val id = d.getString("id") ?: return@mapNotNull null
+            Song(
+                id = id,
+                title = d.getString("title").orEmpty(),
+                artist = d.getString("artist").orEmpty(),
+                album = d.getString("album").orEmpty(),
+                duration = (d.getLong("duration") ?: 0L).toInt(),
+                image = d.getString("image").orEmpty(),
+                url = d.getString("url").orEmpty(),
+                primaryArtistImage = d.getString("primaryArtistImage").orEmpty()
+            )
+        }
+
+        // Artists of liked songs, the one with most liked songs first.
+        val likedArtists = LinkedHashMap<String, Pair<ArtistInfo, Int>>()
+        liked.forEach { song ->
+            val name = song.firstArtist
+            if (name.isBlank() || name.equals("Music", true) || name.equals("Unknown Artist", true)) return@forEach
+            val key = name.lowercase()
+            val prev = likedArtists[key]
+            val image = song.primaryArtistImage.ifBlank { song.image }
+            likedArtists[key] = if (prev == null) ArtistInfo(name, image) to 1
+            else prev.first to (prev.second + 1)
+        }
+        val fromLikes = likedArtists.values.sortedByDescending { it.second }.map { it.first }
+
+        val followed = try {
+            userRef.collection("followedArtists").get().await().documents.mapNotNull { d ->
+                val name = d.getString("artistName")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                ArtistInfo(name, d.getString("imageUrl").orEmpty())
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+        val artists = LinkedHashMap<String, ArtistInfo>()
+        (fromLikes + followed).forEach { artists.putIfAbsent(it.name.lowercase(), it) }
+        Result.success(ViewedProfile(profile, liked, artists.values.toList()))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("UserProfile", "load failed: ${e.message}")
         Result.failure(e)
     }
 }
