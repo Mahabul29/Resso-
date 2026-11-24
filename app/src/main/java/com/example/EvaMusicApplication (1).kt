@@ -27,6 +27,8 @@ class EvaMusicApplication : Application() {
             context = this,
             firestoreRepo = FirestoreMusicRepository(this)
         )
+        // Admin panel se bheji notifications fetch karke dikhata hai.
+        com.example.util.AdminNotifier.start(this)
         // Start the ad engine early so the first ad appears faster.
         com.example.ui.components.AdStatus.warmUp(this)
         // Re-apply the equalizer the listener saved last time.
