@@ -34,9 +34,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.util.AppConstants
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import java.net.InetAddress
+import java.net.UnknownHostException
 
-private enum class AdPhase { Loading, Shown, Failed }
+private enum class AdPhase { Checking, Loading, Shown, Failed }
 
 /**
  * Remembers when ads could not be loaded because something blocks them (ad-blocker app, private
@@ -57,7 +61,56 @@ object AdStatus {
     var lastEvent: String = "no ad requested yet"
         private set
 
-    fun isBlocked(): Boolean = System.currentTimeMillis() < blockedUntil
+    private const val DNS_BLOCK_RETRY_MS = 10 * 60_000L
+    private const val DNS_OK_CACHE_MS = 5 * 60_000L
+
+    @Volatile
+    private var dnsBlockedUntil = 0L
+
+    @Volatile
+    private var dnsOkUntil = 0L
+
+    fun isBlocked(): Boolean {
+        val now = System.currentTimeMillis()
+        return now < blockedUntil || now < dnsBlockedUntil
+    }
+
+    fun isDnsKnownOk(): Boolean = System.currentTimeMillis() < dnsOkUntil
+
+    /**
+     * True when the phone's DNS (Private DNS, AdGuard-style DNS, a VPN blocker...) refuses to
+     * resolve the ad server. Then no ad and no banner space is shown at all. The result is
+     * remembered, so this lookup does not run for every ad. Call off the main thread.
+     */
+    fun checkDnsBlocked(context: Context): Boolean {
+        if (isBlocked()) return true
+        if (isDnsKnownOk()) return false
+        if (!isOnline(context)) return false
+        val host = Uri.parse(AppConstants.MONETAG_BASE_URL).host ?: return false
+        val blocked = try {
+            val addresses = InetAddress.getAllByName(host)
+            // Ad-blocking DNS usually answers 0.0.0.0 / 127.0.0.1 instead of the real server.
+            addresses.isNotEmpty() && addresses.all { it.isAnyLocalAddress || it.isLoopbackAddress }
+        } catch (_: UnknownHostException) {
+            // The ad server does not resolve. It is a blocker only if normal sites still do.
+            try {
+                InetAddress.getByName("www.google.com")
+                true
+            } catch (_: Exception) {
+                false
+            }
+        } catch (_: Exception) {
+            false
+        }
+        val now = System.currentTimeMillis()
+        if (blocked) {
+            dnsBlockedUntil = now + DNS_BLOCK_RETRY_MS
+            record("dns", "ad server blocked by DNS, ads and banners hidden")
+        } else {
+            dnsOkUntil = now + DNS_OK_CACHE_MS
+        }
+        return blocked
+    }
 
     /** Two failed loads in a row = blocker. One failure alone can just be a slow network. */
     fun markBlocked() {
@@ -130,9 +183,24 @@ fun MonetagAd(
 ) {
     val context = LocalContext.current
     var phase by remember(zoneId) {
-        mutableStateOf(if (AdStatus.isBlocked()) AdPhase.Failed else AdPhase.Loading)
+        mutableStateOf(
+            when {
+                AdStatus.isBlocked() -> AdPhase.Failed
+                AdStatus.isDnsKnownOk() -> AdPhase.Loading
+                else -> AdPhase.Checking
+            }
+        )
     }
-    if (phase == AdPhase.Failed) return
+
+    // Before any ad view is created, check that the phone's DNS lets the ad server through.
+    // If it does not, the ad and its banner space never appear.
+    LaunchedEffect(zoneId) {
+        if (phase == AdPhase.Checking) {
+            val blocked = withContext(Dispatchers.IO) { AdStatus.checkDnsBlocked(context) }
+            phase = if (blocked) AdPhase.Failed else AdPhase.Loading
+        }
+    }
+    if (phase == AdPhase.Failed || phase == AdPhase.Checking) return
 
     // Safety net: if the page never answers, give up so the slot does not stay half-alive.
     LaunchedEffect(zoneId) {
