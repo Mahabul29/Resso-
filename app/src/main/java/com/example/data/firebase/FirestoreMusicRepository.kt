@@ -336,4 +336,39 @@ class FirestoreMusicRepository(
         android.util.Log.w("ArtistSync", "fetch failed: ${e.message}")
         Result.failure(e)
     }
+
+    // ---- Profile (display name + username), stored per user ----
+
+    suspend fun saveProfile(displayName: String, username: String): Result<Unit> = try {
+        val uid = requireUserId()
+        db.collection("users").document(uid).set(
+            mapOf(
+                "displayName" to displayName.trim().take(40),
+                "username" to username.trim().take(20),
+                "updatedAt" to System.currentTimeMillis()
+            )
+        ).await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("ProfileSync", "save failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    /** Success(null) means the account has no saved profile yet. */
+    suspend fun fetchProfile(): Result<Pair<String, String>?> = try {
+        val uid = requireUserId()
+        val d = db.collection("users").document(uid).get().await()
+        if (d.exists()) {
+            Result.success(d.getString("displayName").orEmpty() to d.getString("username").orEmpty())
+        } else {
+            Result.success(null)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("ProfileSync", "fetch failed: ${e.message}")
+        Result.failure(e)
+    }
 }
