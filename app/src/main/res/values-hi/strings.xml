@@ -108,4 +108,12 @@
     <string name="about_title">Resso के बारे में</string>
     <string name="about_body">Resso उन लोगों के लिए म्यूज़िक ऐप है जिन्हें सुनना पसंद है। गाने खोजें और स्ट्रीम करें, अपने पसंदीदा कलाकारों को फ़ॉलो करें, गाने पसंद करें और अपनी लाइब्रेरी एक ही सरल प्लेयर में साथ रखें।\n\nहम आपके सुझावों से Resso को बेहतर बनाते रहते हैं। अपने विचार और समस्याएँ साझा करने के लिए हमारी टेलीग्राम कम्युनिटी से जुड़ें।</string>
     <string name="about_version">वर्ज़न %1$s</string>
+
+    <!-- Lyrics -->
+    <string name="menu_lyrics">लिरिक्स</string>
+    <string name="lyrics_title">लिरिक्स</string>
+    <string name="lyrics_not_available">इस गाने के लिरिक्स उपलब्ध नहीं हैं।</string>
+    <string name="lyrics_load_failed">लिरिक्स लोड नहीं हो सके। इंटरनेट जाँचें।</string>
+    <string name="lyrics_synced_label">सिंक्ड लिरिक्स</string>
+    <string name="music_language_all_short">सभी</string>
 </resources>
