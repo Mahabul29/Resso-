@@ -46,9 +46,12 @@ jobs:
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
-      # build.gradle.kts expects ./debug.keystore (it is gitignored), so create it.
+      # build.gradle.kts expects ./debug.keystore. Use the committed one so the SHA-1
+      # stays the same on every build (needed for Google Sign-In). Only create a
+      # throwaway one if it is missing.
       - name: Create debug keystore
         run: |
+          if [ -f debug.keystore ]; then echo "Using committed debug.keystore"; exit 0; fi
           keytool -genkeypair -v \
             -keystore debug.keystore \
             -storepass android -keypass android \
@@ -62,7 +65,9 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          if [ -f app/google-services.json ]; then
+            echo "Using google-services.json committed in the repo"
+          elif [ -n "$GOOGLE_SERVICES_JSON" ]; then
             echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
             echo "google-services.json added"
           else
@@ -118,5 +123,6 @@ jobs:
             --title "Resso (latest build)" \
             --notes "Auto-built from commit ${GITHUB_SHA::7}. Download Resso.apk below." \
             --target "$GITHUB_SHA"
+
 
             
