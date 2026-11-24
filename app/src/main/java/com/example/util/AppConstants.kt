@@ -3,6 +3,7 @@ package com.example.util
 import android.content.Context
 import android.content.Intent
 import com.example.R
+import kotlin.random.Random
 
 object AppConstants {
     // Update this single constant with your Play Store or website link
@@ -88,6 +89,62 @@ object AppConstants {
         "Bollywood dance hits",
         "Indie Hindi songs"
     )
+
+    /** Generic search templates; "%s" becomes the language name. */
+    private val LANGUAGE_QUERY_TEMPLATES = listOf(
+        "%s songs", "%s hits", "%s love songs", "%s romantic songs", "%s party songs",
+        "%s sad songs", "new %s songs", "%s top 50", "%s dance songs", "%s lofi",
+        "%s pop", "%s old classics", "latest %s", "best of %s", "%s chill songs"
+    )
+
+    /** Popular artists per language: one search per artist gives many different songs. */
+    val LANGUAGE_ARTIST_SEEDS: Map<String, List<String>> = mapOf(
+        "English" to listOf(
+            "Ed Sheeran", "Taylor Swift", "The Weeknd", "Dua Lipa", "Justin Bieber", "Billie Eilish",
+            "Coldplay", "Imagine Dragons", "Bruno Mars", "Ariana Grande", "Adele", "Maroon 5",
+            "Post Malone", "Selena Gomez", "Charlie Puth", "Shawn Mendes", "Harry Styles", "Sia",
+            "Eminem", "Rihanna", "Linkin Park", "OneRepublic", "Lady Gaga", "Katy Perry",
+            "Sam Smith", "Alan Walker", "Calvin Harris", "Drake", "Lana Del Rey", "Olivia Rodrigo"
+        ),
+        "Hindi" to listOf(
+            "Arijit Singh", "Jubin Nautiyal", "Shreya Ghoshal", "Atif Aslam", "Neha Kakkar",
+            "Badshah", "Darshan Raval", "B Praak", "Sonu Nigam", "Armaan Malik", "Vishal Mishra",
+            "Pritam", "Mohit Chauhan", "Kumar Sanu", "Udit Narayan", "Lata Mangeshkar", "Kishore Kumar"
+        ),
+        "Bengali" to listOf(
+            "Anupam Roy", "Arijit Singh Bengali", "Shreya Ghoshal Bengali", "Rupam Islam",
+            "Nachiketa", "Lopamudra Mitra", "Fossils", "Armaan Malik Bengali", "Imran Bengali"
+        ),
+        "Assamese" to listOf(
+            "Zubeen Garg", "Neel Akash", "Angarag Papon Mahanta", "Simanta Shekhar",
+            "Jonkey Borthakur", "Kalpana Patowary", "Dikshu"
+        ),
+        "Punjabi" to listOf(
+            "Diljit Dosanjh", "Sidhu Moose Wala", "AP Dhillon", "Karan Aujla", "Guru Randhawa",
+            "Jass Manak", "Ammy Virk", "Sharry Mann", "Gippy Grewal", "Harrdy Sandhu"
+        ),
+        "Tamil" to listOf("Anirudh Ravichander", "A.R. Rahman Tamil", "Sid Sriram Tamil", "Yuvan Shankar Raja"),
+        "Telugu" to listOf("Sid Sriram Telugu", "Devi Sri Prasad", "Thaman S", "Anirudh Telugu"),
+        "Bhojpuri" to listOf("Pawan Singh", "Khesari Lal Yadav", "Dinesh Lal Yadav", "Arvind Akela Kallu"),
+        "Haryanvi" to listOf("Sapna Choudhary", "Renuka Panwar", "Masoom Sharma", "Diler Kharkiya")
+    )
+
+    /**
+     * A few different search queries to fetch a random mix. With languages picked the queries are
+     * built from those languages only (artist seeds + templates); otherwise from the general pool.
+     */
+    fun randomQueries(languages: Set<String>, count: Int): List<String> {
+        if (languages.isEmpty()) return ROTATING_DISCOVERY_QUERIES.shuffled().take(count)
+        return List(count) {
+            val lang = languages.random()
+            val seeds = LANGUAGE_ARTIST_SEEDS[lang].orEmpty()
+            if (seeds.isNotEmpty() && Random.nextInt(100) < 60) {
+                seeds.random()
+            } else {
+                LANGUAGE_QUERY_TEMPLATES.random().replace("%s", lang)
+            }
+        }.distinct()
+    }
 
     val ROTATING_DISCOVERY_QUERIES = listOf(
         "Arijit Singh hits",
