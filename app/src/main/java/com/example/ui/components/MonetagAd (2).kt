@@ -123,10 +123,18 @@ object AdStatus {
         blockedUntil = 0L
     }
 
+    private val perZone = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     fun record(zoneId: String, text: String) {
         lastEvent = "zone $zoneId: $text"
+        perZone[zoneId] = text
         android.util.Log.d("MonetagAd", lastEvent)
     }
+
+    /** One line per zone that has reported something (for Settings > About us). */
+    fun summary(): String =
+        if (perZone.isEmpty()) "no ad requested yet"
+        else perZone.entries.sortedBy { it.key }.joinToString("\n") { "${it.key}: ${it.value}" }
 
     fun isOnline(context: Context): Boolean = try {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -201,6 +209,7 @@ fun MonetagAd(
         }
     }
     if (phase == AdPhase.Failed || phase == AdPhase.Checking) return
+    LaunchedEffect(zoneId) { AdStatus.record(zoneId, "requested, waiting for ad") }
 
     // Safety net: if the page never answers, give up so the slot does not stay half-alive.
     LaunchedEffect(zoneId) {
