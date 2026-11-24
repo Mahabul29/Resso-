@@ -166,12 +166,39 @@ object AppConstants {
     )
 }
 
+/**
+ * Shares the whole app: the installed APK file is copied to the cache and sent through the system
+ * share sheet (WhatsApp, Bluetooth, Nearby Share, etc.), along with the invite text + link.
+ * If the APK cannot be shared for any reason, falls back to sharing only the text + link.
+ */
 fun shareApp(context: Context) {
-    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, AppConstants.SHARE_MESSAGE)
+    val chooserTitle = context.getString(R.string.share_chooser_title)
+
+    val apkUri = try {
+        val source = java.io.File(context.applicationInfo.sourceDir)
+        val dir = java.io.File(context.cacheDir, "shared").apply { mkdirs() }
+        val target = java.io.File(dir, "Resso.apk")
+        source.copyTo(target, overwrite = true)
+        androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            target
+        )
+    } catch (e: Exception) {
+        null
     }
-    val chooser = Intent.createChooser(sendIntent, context.getString(R.string.share_chooser_title)).apply {
+
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        putExtra(Intent.EXTRA_TEXT, AppConstants.SHARE_MESSAGE)
+        if (apkUri != null) {
+            type = "application/vnd.android.package-archive"
+            putExtra(Intent.EXTRA_STREAM, apkUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } else {
+            type = "text/plain"
+        }
+    }
+    val chooser = Intent.createChooser(sendIntent, chooserTitle).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     context.startActivity(chooser)
