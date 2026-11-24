@@ -22,7 +22,7 @@ object AppConstants {
 
     // Up Next ads: har 8 songs ke baad agla zone (cycle hota rehta hai)
     val ZONES_UP_NEXT = listOf(
-        "12335695", "12335696", "12335697",
+        "12335695", "12335696",
         "12335702", "12335703", "12335704"
     )
 
