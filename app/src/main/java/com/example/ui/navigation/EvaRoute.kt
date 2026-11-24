@@ -25,6 +25,11 @@ sealed interface EvaRoute {
     data object Equalizer : EvaRoute
 
     @Serializable
+    data class UserProfile(
+        val uid: String
+    ) : EvaRoute
+
+    @Serializable
     data class Artist(
         val artistName: String,
         val imageUrl: String = ""
