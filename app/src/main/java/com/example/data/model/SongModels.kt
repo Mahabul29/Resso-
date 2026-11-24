@@ -61,7 +61,8 @@ data class ArtistInfo(
 data class UserProfile(
     val uid: String,
     val displayName: String,
-    val username: String
+    val username: String,
+    val photoUrl: String = ""
 )
 
 /** Everything the profile screen of another user shows. */
