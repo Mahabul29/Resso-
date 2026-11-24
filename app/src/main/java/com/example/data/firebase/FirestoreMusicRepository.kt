@@ -353,6 +353,7 @@ class FirestoreMusicRepository(
                 "displayNameLower" to cleanName.lowercase(),
                 "username" to cleanUser,
                 "usernameLower" to cleanUser,
+                "photoUrl" to (auth?.currentUser?.photoUrl?.toString().orEmpty()),
                 "updatedAt" to System.currentTimeMillis()
             )
         ).await()
@@ -386,7 +387,7 @@ class FirestoreMusicRepository(
         val username = d.getString("username").orEmpty()
         val name = d.getString("displayName").orEmpty()
         if (username.isBlank() && name.isBlank()) return null
-        return UserProfile(uid = d.id, displayName = name, username = username)
+        return UserProfile(uid = d.id, displayName = name, username = username, photoUrl = d.getString("photoUrl").orEmpty())
     }
 
     /** Finds people whose @username (or display name) starts with [query]. Never returns the current user. */
