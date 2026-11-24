@@ -221,4 +221,116 @@ class FirestoreMusicRepository(
             Result.failure(e)
         }
     }
+
+    // ---- Liked songs, stored per user so they survive reinstalls and new phones ----
+
+    suspend fun saveLikedSong(song: Song, likedAt: Long = System.currentTimeMillis()): Result<Unit> = try {
+        val uid = requireUserId()
+        val payload = mapOf(
+            "id" to song.id,
+            "title" to song.title.take(300),
+            "artist" to song.artist.take(300),
+            "album" to song.album.take(300),
+            "duration" to song.duration,
+            "image" to song.image,
+            "url" to song.url,
+            "primaryArtistImage" to song.primaryArtistImage,
+            "likedAt" to likedAt
+        )
+        db.collection("users").document(uid).collection("likedSongs")
+            .document(song.firestoreId).set(payload).await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("LikedSync", "save failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    suspend fun deleteLikedSong(song: Song): Result<Unit> = try {
+        val uid = requireUserId()
+        db.collection("users").document(uid).collection("likedSongs")
+            .document(song.firestoreId).delete().await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("LikedSync", "delete failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    /** Returns the user's liked songs with their liked time, or a failure if it can't be read. */
+    suspend fun fetchLikedSongs(): Result<List<Pair<Song, Long>>> = try {
+        val uid = requireUserId()
+        val snap = db.collection("users").document(uid).collection("likedSongs").get().await()
+        Result.success(
+            snap.documents.mapNotNull { d ->
+                val id = d.getString("id") ?: return@mapNotNull null
+                val song = Song(
+                    id = id,
+                    title = d.getString("title").orEmpty(),
+                    artist = d.getString("artist").orEmpty(),
+                    album = d.getString("album").orEmpty(),
+                    duration = (d.getLong("duration") ?: 0L).toInt(),
+                    image = d.getString("image").orEmpty(),
+                    url = d.getString("url").orEmpty(),
+                    primaryArtistImage = d.getString("primaryArtistImage").orEmpty()
+                )
+                song to (d.getLong("likedAt") ?: 0L)
+            }
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("LikedSync", "fetch failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    // ---- Followed artists, stored per user ----
+
+    private fun artistDocId(name: String): String =
+        name.trim().lowercase().replace(Regex("[^a-z0-9_\\-]"), "_").take(128).ifBlank { "unknown_artist" }
+
+    suspend fun saveFollowedArtist(name: String, imageUrl: String, followedAt: Long = System.currentTimeMillis()): Result<Unit> = try {
+        val uid = requireUserId()
+        db.collection("users").document(uid).collection("followedArtists")
+            .document(artistDocId(name))
+            .set(mapOf("artistName" to name.trim().take(200), "imageUrl" to imageUrl, "followedAt" to followedAt))
+            .await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("ArtistSync", "save failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    suspend fun deleteFollowedArtist(name: String): Result<Unit> = try {
+        val uid = requireUserId()
+        db.collection("users").document(uid).collection("followedArtists")
+            .document(artistDocId(name)).delete().await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("ArtistSync", "delete failed: ${e.message}")
+        Result.failure(e)
+    }
+
+    /** Returns (name, imageUrl, followedAt) for each followed artist in the cloud. */
+    suspend fun fetchFollowedArtists(): Result<List<Triple<String, String, Long>>> = try {
+        val uid = requireUserId()
+        val snap = db.collection("users").document(uid).collection("followedArtists").get().await()
+        Result.success(
+            snap.documents.mapNotNull { d ->
+                val name = d.getString("artistName")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                Triple(name, d.getString("imageUrl").orEmpty(), d.getLong("followedAt") ?: 0L)
+            }
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("ArtistSync", "fetch failed: ${e.message}")
+        Result.failure(e)
+    }
 }
