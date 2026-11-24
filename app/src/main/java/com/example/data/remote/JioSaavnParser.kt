@@ -1,6 +1,8 @@
 package com.example.data.remote
 
 import com.example.data.model.ArtistInfo
+import com.example.data.model.LyricLine
+import com.example.data.model.Lyrics
 import com.example.data.model.Song
 import com.example.util.decodeHtmlEntities
 import com.squareup.moshi.Moshi
@@ -74,6 +76,154 @@ object JioSaavnParser {
         return artists
     }
 
+    // ---- Lyrics ----------------------------------------------------------------------------
+    // The lyrics routes are proxied from another service, so the exact JSON shape is not fixed.
+    // This reader accepts: an LRC string ("[01:23.45] text"), plain text, or a list of
+    // {time / start / startTime..., text / line / words...} objects, inside "data" or at the top.
+
+    private val lrcTag = Regex("\\[(\\d{1,3}):(\\d{1,2})(?:[.:](\\d{1,3}))?]")
+    private val textKeys = listOf("text", "line", "words", "lyrics", "content", "lyric")
+    private val timeKeys = listOf(
+        "time", "timestamp", "start", "startTime", "start_time", "startTimeMs", "startMs",
+        "start_ms", "ms", "t", "offset", "seconds"
+    )
+    private val containerKeys = listOf(
+        "syncedLyrics", "synced", "sync", "lines", "lyrics", "lrc", "subtitles", "data", "result", "results"
+    )
+
+    fun parseLyrics(rawJson: String): Lyrics {
+        val trimmed = rawJson.trim()
+        if (trimmed.isEmpty()) return Lyrics(emptyList())
+        val parsed: Any? = try {
+            moshiAdapter.fromJson(trimmed)
+        } catch (_: Exception) {
+            // Not JSON at all: treat the body itself as lyrics text.
+            return Lyrics(linesFromText(trimmed))
+        }
+        return Lyrics(findLyricLines(parsed, 0))
+    }
+
+    private fun findLyricLines(node: Any?, depth: Int): List<LyricLine> {
+        if (depth > 4 || node == null) return emptyList()
+        return when (node) {
+            is String -> linesFromText(node)
+            is List<*> -> linesFromList(node)
+            is Map<*, *> -> {
+                for (key in containerKeys) {
+                    val child = node[key] ?: continue
+                    val found = findLyricLines(child, depth + 1)
+                    if (found.isNotEmpty()) return found
+                }
+                emptyList()
+            }
+            else -> emptyList()
+        }
+    }
+
+    private fun linesFromList(list: List<*>): List<LyricLine> {
+        if (list.isEmpty()) return emptyList()
+        // A list of plain strings: one lyric line each.
+        if (list.all { it is String }) {
+            return list.flatMap { linesFromText(it as String) }
+        }
+        val rawTimes = ArrayList<Pair<Double?, String>>()
+        var timeKeyUsed: String? = null
+        for (item in list) {
+            val map = item as? Map<*, *> ?: continue
+            val text = textKeys.firstNotNullOfOrNull { k ->
+                (map[k] as? String)?.let { decodeHtmlEntities(it) }?.takeIf { it.isNotEmpty() }
+            } ?: ""
+            var time: Double? = null
+            for (k in timeKeys) {
+                val v = map[k] ?: continue
+                time = parseTimeValue(v)
+                if (time != null) {
+                    timeKeyUsed = timeKeyUsed ?: k
+                    break
+                }
+            }
+            rawTimes.add(time to text)
+        }
+        if (rawTimes.isEmpty()) return emptyList()
+
+        val numbers = rawTimes.mapNotNull { it.first }
+        // Seconds or milliseconds? Key names win; otherwise a fractional or small max means seconds.
+        val key = timeKeyUsed.orEmpty().lowercase()
+        val isMillis = when {
+            numbers.isEmpty() -> false
+            key.contains("ms") || key.contains("milli") -> true
+            key.contains("sec") -> false
+            else -> numbers.max() > 1000.0 && numbers.all { it == Math.floor(it) }
+        }
+        return rawTimes.map { (t, text) ->
+            LyricLine(t?.let { if (isMillis) it.toLong() else (it * 1000.0).toLong() }, text)
+        }
+    }
+
+    /** Number, "12.5", or clock text such as "01:23.45" -> value in the item's own unit. */
+    private fun parseTimeValue(v: Any?): Double? = when (v) {
+        is Number -> v.toDouble()
+        is String -> {
+            val s = v.trim()
+            s.toDoubleOrNull() ?: run {
+                val parts = s.split(":")
+                if (parts.size in 2..3 && parts.all { it.toDoubleOrNull() != null }) {
+                    parts.fold(0.0) { acc, p -> acc * 60.0 + p.toDouble() }
+                } else {
+                    null
+                }
+            }
+        }
+        else -> null
+    }
+
+    private fun linesFromText(raw: String): List<LyricLine> {
+        val cleaned = decodeHtmlEntities(
+            raw.replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+        ).replace("\r", "")
+        if (cleaned.isBlank()) return emptyList()
+
+        val out = ArrayList<LyricLine>()
+        var anyTimed = false
+        for (rawLine in cleaned.split("\n")) {
+            val tags = lrcTag.findAll(rawLine).toList()
+            if (tags.isEmpty()) {
+                out.add(LyricLine(null, rawLine.trim()))
+                continue
+            }
+            anyTimed = true
+            val text = rawLine.replace(lrcTag, "").trim()
+            for (tag in tags) {
+                val min = tag.groupValues[1].toLong()
+                val sec = tag.groupValues[2].toLong()
+                val fraction = tag.groupValues[3]
+                val ms = when (fraction.length) {
+                    0 -> 0L
+                    1 -> fraction.toLong() * 100
+                    2 -> fraction.toLong() * 10
+                    else -> fraction.take(3).toLong()
+                }
+                out.add(LyricLine(min * 60_000L + sec * 1000L + ms, text))
+            }
+        }
+        val lines = if (anyTimed) {
+            // Metadata lines like "[ar:Name]" have no time tag match and no real lyric: drop them.
+            out.filter { it.timeMs != null }.sortedBy { it.timeMs }
+        } else {
+            out
+        }
+        // Keep blank lines between stanzas, but not at the start/end or doubled.
+        val result = ArrayList<LyricLine>()
+        for (line in lines) {
+            if (line.text.isEmpty() && (result.isEmpty() || result.last().text.isEmpty()) && line.timeMs == null) continue
+            result.add(line)
+        }
+        while (result.isNotEmpty() && result.last().text.isEmpty() && result.last().timeMs == null) {
+            result.removeAt(result.lastIndex)
+        }
+        return result
+    }
+
     private fun extractSongList(root: Map<*, *>): List<*> {
         val dataVal = root["data"]
         if (dataVal is Map<*, *>) {
@@ -127,7 +277,8 @@ object JioSaavnParser {
             duration = duration,
             image = image,
             url = audioUrl,
-            primaryArtistImage = primaryArtistImage.ifBlank { image }
+            primaryArtistImage = primaryArtistImage.ifBlank { image },
+            language = obj["language"].asCleanString().lowercase()
         )
     }
 
