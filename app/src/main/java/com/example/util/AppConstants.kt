@@ -29,6 +29,9 @@ object AppConstants {
     // Up Next list me har itne songs ke baad ek ad
     const val UP_NEXT_AD_INTERVAL = 8
 
+    // Me > Liked Songs: ek ad har itne songs ke baad
+    const val LIKED_SONGS_AD_INTERVAL = 7
+
     const val TELEGRAM_URL = "https://t.me/+8pRE58uYZZIzYjJl"
 
     /** Music languages offered in Settings: key is used for searching, native is only a label. */
