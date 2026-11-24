@@ -134,9 +134,14 @@ object AppConstants {
      * built from those languages only (artist seeds + templates); otherwise from the general pool.
      */
     fun randomQueries(languages: Set<String>, count: Int): List<String> {
-        if (languages.isEmpty()) return ROTATING_DISCOVERY_QUERIES.shuffled().take(count)
-        return List(count) {
-            val lang = languages.random()
+        // "All": a different language for each query, so Hindi, English, Bengali, Assamese...
+        // all show up in the mix instead of only Hindi.
+        val picks: List<String> = if (languages.isEmpty()) {
+            MUSIC_LANGUAGES.map { it.key }.shuffled().take(count)
+        } else {
+            List(count) { languages.random() }
+        }
+        return picks.map { lang ->
             val seeds = LANGUAGE_ARTIST_SEEDS[lang].orEmpty()
             if (seeds.isNotEmpty() && Random.nextInt(100) < 60) {
                 seeds.random()
