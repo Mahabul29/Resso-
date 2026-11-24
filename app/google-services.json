@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "798262728052",
+    "project_id": "resso-c2575",
+    "storage_bucket": "resso-c2575.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:798262728052:android:33f58a315d97ff584fc821",
+        "android_client_info": {
+          "package_name": "com.aistudio.evamusic.rkmpzq"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "798262728052-hi9jj0pcgc912gtmmg9caajt59u1bliu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.evamusic.rkmpzq",
+            "certificate_hash": "03d6cad95489eb42860dfdf8251950e63bc1bfd0"
+          }
+        },
+        {
+          "client_id": "798262728052-i8phl26r79l9l53rla3snn51l01ro4nr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6jBqq-r8Pk_h45kKhi12IIE0xCtMCL1A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "798262728052-i8phl26r79l9l53rla3snn51l01ro4nr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
