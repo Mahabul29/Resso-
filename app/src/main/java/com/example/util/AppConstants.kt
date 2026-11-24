@@ -35,7 +35,7 @@ object AppConstants {
     // ---- Admin notifications ----
     // Apne deployed server (server.js, Koyeb/Render) ka base URL yaha daalo, bina end ke "/" ke.
     // Example: "https://your-app.koyeb.app" . Khali rahega to notification nahi aayegi.
-    const val NOTIFICATION_API_URL = ""
+    const val NOTIFICATION_API_URL = "https://primary-adina-66655t-096c6161.apps.mistral.run"
 
     const val TELEGRAM_URL ="https://t.me/+8pRE58uYZZIzYjJl"
 
