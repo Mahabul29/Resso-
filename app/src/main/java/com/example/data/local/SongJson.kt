@@ -20,6 +20,7 @@ object SongJson {
                     put("image", s.image)
                     put("url", s.url)
                     put("primaryArtistImage", s.primaryArtistImage)
+                    put("language", s.language)
                 }
             )
         }
@@ -43,7 +44,8 @@ object SongJson {
                     duration = o.optInt("duration"),
                     image = o.optString("image"),
                     url = url,
-                    primaryArtistImage = o.optString("primaryArtistImage")
+                    primaryArtistImage = o.optString("primaryArtistImage"),
+                    language = o.optString("language")
                 )
             )
         }
