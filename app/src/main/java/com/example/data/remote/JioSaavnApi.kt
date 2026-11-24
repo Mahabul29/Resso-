@@ -33,6 +33,12 @@ interface JioSaavnApi {
         @Query("limit") limit: Int = 20
     ): Response<ResponseBody>
 
+    @GET("api/lyrics/{id}/sync")
+    suspend fun getSyncedLyrics(@Path("id") id: String): Response<ResponseBody>
+
+    @GET("api/lyrics/{id}")
+    suspend fun getLyrics(@Path("id") id: String): Response<ResponseBody>
+
     /** Songs related to the given song (same endpoint family as saavn.dev). */
     @GET("api/songs/{id}/suggestions")
     suspend fun getSongSuggestions(
