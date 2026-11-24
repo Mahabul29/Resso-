@@ -56,3 +56,18 @@ data class ArtistInfo(
     val imageUrl: String,
     val isFollowed: Boolean = false
 )
+
+/** Another listener's public profile (shown when someone searches a username). */
+data class UserProfile(
+    val uid: String,
+    val displayName: String,
+    val username: String
+)
+
+/** Everything the profile screen of another user shows. */
+data class ViewedProfile(
+    val profile: UserProfile,
+    val likedSongs: List<Song>,
+    /** Artists of the liked songs (most-liked first) plus the artists this user follows. */
+    val artists: List<ArtistInfo>
+)
