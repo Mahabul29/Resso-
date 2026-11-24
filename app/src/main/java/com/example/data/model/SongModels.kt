@@ -14,7 +14,9 @@ data class Song(
     val duration: Int,
     val image: String,
     val url: String,
-    val primaryArtistImage: String = ""
+    val primaryArtistImage: String = "",
+    /** Language reported by the music API ("hindi", "english", "bengali"...). Blank if unknown. */
+    val language: String = ""
 ) {
     val firstArtist: String
         get() = artist.split(",")
